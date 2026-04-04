@@ -14,7 +14,6 @@ import {
   Bell
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
-import Header from './Header';
 
 const DashboardLayout = ({ children }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
