@@ -134,7 +134,7 @@ const NotesUpload = () => {
         throw new Error(uploadResult.message || 'File upload failed');
       }
 
-      // Create note with file URL
+      // Create note with file URL - use browser's file type for reliability
       const noteData = {
         title: formData.title,
         subject: formData.subject,
@@ -143,7 +143,7 @@ const NotesUpload = () => {
         fileUrl: uploadResult.data.secure_url,
         fileName: uploadResult.data.original_filename,
         fileSize: uploadResult.data.bytes,
-        fileType: uploadResult.data.resource_type
+        fileType: formData.file.type || uploadResult.data.format || 'application/octet-stream'
       };
 
       const noteResponse = await apiService.createNote(noteData);

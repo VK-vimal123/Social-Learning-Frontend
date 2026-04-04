@@ -145,6 +145,15 @@ class ApiService {
     });
   }
 
+  // Users endpoints
+  async getAllUsers() {
+    return this.request('/users');
+  }
+
+  async getUserById(id) {
+    return this.request(`/users/${id}`);
+  }
+
   // Subjects endpoints
   async getSubjects(params = {}) {
     const queryString = new URLSearchParams(params).toString();

@@ -12,8 +12,10 @@ import {
   ArrowLeft,
   ThumbsUp,
   Share2,
-  FileText
+  FileText,
+  Eye
 } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
 import apiService from '../services/apiService';
 import Toast from '../components/Toast';
 import '../assets/css/note-detail.css';
@@ -21,6 +23,7 @@ import '../assets/css/note-detail.css';
 const NoteDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [note, setNote] = useState(null);
   const [loading, setLoading] = useState(true);
   const [liked, setLiked] = useState(false);
@@ -120,6 +123,14 @@ const NoteDetail = () => {
     }
   };
 
+  const handlePreview = () => {
+    if (note?.fileUrl) {
+      window.open(note.fileUrl, '_blank');
+    } else {
+      showToast('No preview available for this note.', 'error');
+    }
+  };
+
   const handleComment = async () => {
     if (newComment.trim()) {
       try {
@@ -144,13 +155,32 @@ const NoteDetail = () => {
     showToast('Link copied to clipboard!', 'success');
   };
 
+  // Helper to format file type display
+  const formatFileType = (fileType) => {
+    if (!fileType) return 'Unknown';
+    
+    // Map MIME types to readable names
+    const typeMap = {
+      'application/pdf': 'PDF',
+      'application/msword': 'DOC',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'DOCX',
+      'application/vnd.ms-excel': 'XLS',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'XLSX',
+      'application/vnd.ms-powerpoint': 'PPT',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'PPTX',
+      'text/plain': 'TXT',
+      'text/csv': 'CSV'
+    };
+    
+    return typeMap[fileType] || fileType.split('/').pop()?.toUpperCase() || 'Unknown';
+  };
+
   const formatFileSize = (bytes) => {
-    if (!bytes) return 'Unknown size';
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    if (!bytes) return '0 B';
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    return (bytes / (1024 * 1024 * 1024)).toFixed(1) + ' GB';
   };
 
   const renderStars = (rating, interactive = false) => {
@@ -205,117 +235,147 @@ const NoteDetail = () => {
   }
 
   return (
-    <div className="note-detail-container">
+    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px' }}>
       {/* Header */}
-      <div className="note-detail-header">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
         <button
           onClick={() => navigate('/browse')}
-          className="back-button"
+          style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', background: 'transparent', border: '1px solid #d1d5db', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', color: '#374151' }}
         >
-          <ArrowLeft size={20} />
+          <ArrowLeft size={18} />
           Back to Browse
         </button>
         <button
           onClick={handleShare}
-          className="share-button"
+          style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', background: 'transparent', border: '1px solid #d1d5db', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', color: '#374151' }}
         >
           <Share2 size={18} />
           Share
         </button>
       </div>
 
-      <div className="note-detail-grid">
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 350px', gap: '24px' }}>
+        <style>{`
+          @media (max-width: 968px) {
+            .note-detail-grid {
+              grid-template-columns: 1fr !important;
+            }
+            .note-detail-sidebar {
+              width: 100% !important;
+            }
+          }
+        `}</style>
         {/* Main Content */}
-        <div className="main-content">
-          {/* Note Header */}
-          <div className="note-card">
-            <div className="note-header">
-              <h1>{note.title}</h1>
-              <p className="note-description">{note.description}</p>
-              
-              <div className="author-info">
-                <div className="author-avatar">
-                  <div className="author-avatar-circle">
-                    {note.author.avatar}
-                  </div>
-                  <div className="author-details">
-                    <p className="author-name">{note.author.name}</p>
-                    <p className="author-email">{note.author.email}</p>
-                  </div>
-                </div>
-                <div className="meta-info">
-                  <Calendar size={16} />
-                  {new Date(note.uploadDate).toLocaleDateString()}
-                </div>
-                <span className="subject-badge">{note.subject}</span>
+        <div>
+          {/* Note Card */}
+          <div style={{ background: 'white', borderRadius: '16px', padding: '32px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', marginBottom: '24px' }}>
+            {/* Title */}
+            <h1 style={{ fontSize: '28px', fontWeight: '700', marginBottom: '12px', color: '#111827' }}>
+              {note.title}
+            </h1>
+            <p style={{ fontSize: '16px', color: '#6b7280', marginBottom: '24px', lineHeight: '1.6' }}>
+              {note.description}
+            </p>
+
+            {/* Author Info */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px', padding: '16px', background: '#f9fafb', borderRadius: '12px' }}>
+              <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '20px', fontWeight: '600' }}>
+                {(note.uploadedBy?.fullName || note.uploadedBy?.username || 'U').charAt(0).toUpperCase()}
+              </div>
+              <div style={{ flex: 1 }}>
+                <p style={{ fontWeight: '600', fontSize: '16px', color: '#111827' }}>
+                  {note.uploadedBy?.fullName || note.uploadedBy?.username || 'Unknown User'}
+                </p>
+                <p style={{ fontSize: '14px', color: '#6b7280' }}>
+                  {note.uploadedBy?.school} • {note.uploadedBy?.branch}
+                </p>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <p style={{ fontSize: '12px', color: '#6b7280' }}>{new Date(note.createdAt).toLocaleDateString()}</p>
+                <span style={{ display: 'inline-block', marginTop: '4px', padding: '4px 12px', background: '#e0e7ff', color: '#4338ca', borderRadius: '20px', fontSize: '12px', fontWeight: '600' }}>
+                  {note.subject?.name || note.subject}
+                </span>
               </div>
             </div>
 
             {/* Tags */}
-            <div className="tags-container">
-              {note.tags.map((tag, index) => (
-                <span key={index} className="tag">
-                  <Tag size={14} />
-                  {tag}
-                </span>
-              ))}
-            </div>
+            {note.tags && note.tags.length > 0 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '24px' }}>
+                {note.tags.map((tag, index) => (
+                  <span key={index} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', background: '#f3f4f6', borderRadius: '16px', fontSize: '13px', color: '#4b5563' }}>
+                    <Tag size={12} />
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            )}
 
             {/* Stats */}
-            <div className="stats-bar">
-              <div className="stat-item">
-                <Star size={16} className="star-icon" />
-                {note.rating} ({note.ratingCount} reviews)
+            <div style={{ display: 'flex', gap: '24px', padding: '16px 0', borderTop: '1px solid #e5e7eb', borderBottom: '1px solid #e5e7eb', marginBottom: '24px', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', color: '#6b7280' }}>
+                <Star size={16} style={{ color: '#fbbf24' }} />
+                <span style={{ fontWeight: '600', color: '#111827' }}>{(note.stats?.averageRating || 0).toFixed(1)}</span>
+                <span>({note.stats?.totalRatings || 0} reviews)</span>
               </div>
-              <div className="stat-item">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', color: '#6b7280' }}>
                 <Download size={16} />
-                {note.downloads} downloads
+                {note.stats?.downloads || 0} downloads
               </div>
-              <div className="stat-item">
-                <MessageCircle size={16} />
-                {comments.length} comments
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', color: '#6b7280' }}>
+                <Eye size={16} />
+                {note.stats?.views || 0} views
               </div>
-              <div className="stat-item">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', color: '#6b7280' }}>
                 <FileText size={16} />
-                {note.fileSize} • {note.fileType}
+                {formatFileSize(note.fileSize)} • <span style={{ padding: '2px 8px', background: '#e0e7ff', color: '#4338ca', borderRadius: '4px', fontSize: '12px', fontWeight: '600' }}>{formatFileType(note.fileType)}</span>
               </div>
             </div>
 
-            {/* Actions */}
-            <div className="action-buttons">
+            {/* Action Buttons */}
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button
+                onClick={handlePreview}
+                style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '14px 24px', background: 'transparent', border: '2px solid #667eea', color: '#667eea', borderRadius: '10px', fontSize: '16px', fontWeight: '600', cursor: 'pointer' }}
+              >
+                <Eye size={20} />
+                Preview
+              </button>
               <button
                 onClick={handleDownload}
-                className="download-button"
+                disabled={downloading}
+                style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '14px 24px', background: '#667eea', color: 'white', border: 'none', borderRadius: '10px', fontSize: '16px', fontWeight: '600', cursor: 'pointer' }}
               >
                 <Download size={20} />
-                Download Note
+                {downloading ? 'Downloading...' : 'Download'}
               </button>
               <button
                 onClick={handleLike}
-                className={`like-button ${liked ? 'liked' : ''}`}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '14px 20px', background: liked ? '#fef2f2' : '#f3f4f6', border: 'none', color: liked ? '#ef4444' : '#6b7280', borderRadius: '10px', fontSize: '16px', fontWeight: '600', cursor: 'pointer' }}
               >
-                <Heart size={20} className="heart-icon" />
-                {likeCount} Likes
+                <Heart size={20} fill={liked ? '#ef4444' : 'none'} />
+                {likeCount}
               </button>
             </div>
           </div>
 
           {/* Rating Section */}
-          <div className="note-card rating-section">
-            <h3>Rate this Note</h3>
-            <div className="rating-container">
-              <div className="star-rating">
+          <div style={{ background: 'white', borderRadius: '16px', padding: '24px', marginBottom: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+            <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '16px', color: '#111827' }}>Rate this Note</h3>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ display: 'flex', gap: '8px' }}>
                 {[1, 2, 3, 4, 5].map((star) => (
                   <Star
                     key={star}
-                    size={24}
-                    className={`star ${star <= userRating ? 'filled' : ''}`}
+                    size={28}
+                    fill={star <= userRating ? '#fbbf24' : 'none'}
+                    color={star <= userRating ? '#fbbf24' : '#d1d5db'}
+                    style={{ cursor: 'pointer' }}
                     onClick={() => handleRating(star)}
                   />
                 ))}
               </div>
               {userRating > 0 && (
-                <span className="rating-text">Thank you for rating!</span>
+                <span style={{ color: '#667eea', fontSize: '14px', fontWeight: '500' }}>Thank you for rating!</span>
               )}
             </div>
           </div>
@@ -334,113 +394,110 @@ const NoteDetail = () => {
           </div>
 
           {/* Comments Section */}
-          <div className="note-card comments-section">
-            <div className="comments-header">
-              <h3>Comments ({comments.length})</h3>
-              <button
-                onClick={() => setShowComments(!showComments)}
-                className="toggle-comments"
-              >
-                {showComments ? 'Hide' : 'Show'} Comments
-              </button>
+          <div style={{ background: 'white', borderRadius: '16px', padding: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#111827' }}>Comments ({comments.length})</h3>
             </div>
 
-            <div className={`comments-content ${showComments ? '' : 'hidden'}`}>
-              {/* Add Comment */}
-              <div className="comment-form">
-                <div className="comment-avatar">CU</div>
-                <div className="comment-input-container">
-                  <textarea
-                    value={newComment}
-                    onChange={(e) => setNewComment(e.target.value)}
-                    placeholder="Share your thoughts about this note..."
-                    className="comment-textarea"
-                    rows={3}
-                  />
-                  <div className="comment-submit-container">
-                    <button
-                      onClick={handleComment}
-                      className="comment-submit"
-                    >
-                      Post Comment
+            {/* Add Comment */}
+            <div style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
+              <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '14px', fontWeight: '600', flexShrink: 0 }}>
+                {(user?.fullName || user?.username || 'U').charAt(0).toUpperCase()}
+              </div>
+              <div style={{ flex: 1 }}>
+                <textarea
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  placeholder="Share your thoughts about this note..."
+                  style={{ width: '100%', padding: '12px 16px', border: '1px solid #d1d5db', borderRadius: '10px', fontSize: '14px', resize: 'vertical', minHeight: '80px', marginBottom: '12px' }}
+                  rows={3}
+                />
+                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <button
+                    onClick={handleComment}
+                    style={{ padding: '10px 20px', background: '#667eea', color: 'white', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' }}
+                  >
+                    Post Comment
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Comments List */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {comments.map((comment) => (
+                <div key={comment._id || comment.id} style={{ display: 'flex', gap: '12px' }}>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#e0e7ff', color: '#4338ca', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: '600', flexShrink: 0 }}>
+                    {(comment.user?.fullName || comment.user?.username || 'U').charAt(0).toUpperCase()}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                      <span style={{ fontWeight: '600', fontSize: '14px', color: '#111827' }}>{comment.user?.fullName || comment.user?.username || 'Unknown'}</span>
+                      <span style={{ fontSize: '12px', color: '#6b7280' }}>{new Date(comment.createdAt || comment.date).toLocaleDateString()}</span>
+                    </div>
+                    <p style={{ fontSize: '14px', color: '#374151', marginBottom: '8px', lineHeight: '1.5' }}>{comment.content}</p>
+                    <button style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', color: '#6b7280', background: 'none', border: 'none', cursor: 'pointer' }}>
+                      <ThumbsUp size={14} />
+                      {comment.likes > 0 ? comment.likes : 'Like'}
                     </button>
                   </div>
                 </div>
-              </div>
-
-              {/* Comments List */}
-              <div className="comments-list">
-                {comments.map((comment) => (
-                  <div key={comment.id} className="comment">
-                    <div className="comment-avatar">
-                      {comment.author.avatar}
-                    </div>
-                    <div className="comment-content">
-                      <div className="comment-meta">
-                        <span className="comment-author">{comment.author.name}</span>
-                        <span className="comment-date">
-                          {new Date(comment.date).toLocaleDateString()}
-                        </span>
-                      </div>
-                      <p className="comment-text">{comment.content}</p>
-                      <button className="comment-like">
-                        <ThumbsUp size={14} />
-                        {comment.likes > 0 && comment.likes}
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              ))}
             </div>
           </div>
         </div>
 
         {/* Sidebar */}
-        <div className="sidebar">
+        <div style={{ width: '350px' }}>
           {/* Author Info */}
-          <div className="note-card author-card">
-            <h3>About the Author</h3>
-            <div className="author-card-content">
-              <div className="author-large-avatar">
-                {note.author.avatar}
+          <div style={{ background: 'white', borderRadius: '16px', padding: '24px', marginBottom: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '16px', color: '#111827' }}>About the Author</h3>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '32px', fontWeight: '600', margin: '0 auto 16px' }}>
+                {(note.uploadedBy?.fullName || note.uploadedBy?.username || 'U').charAt(0).toUpperCase()}
               </div>
-              <h4 className="author-card-name">{note.author.name}</h4>
-              <p className="author-card-email">{note.author.email}</p>
-              <div className="author-stats">
-                <div className="author-stat">
-                  <span>Notes Uploaded:</span>
-                  <span className="author-stat-value">12</span>
+              <h4 style={{ fontSize: '18px', fontWeight: '600', color: '#111827', marginBottom: '4px' }}>{note.uploadedBy?.fullName || note.uploadedBy?.username || 'Unknown User'}</h4>
+              <p style={{ fontSize: '14px', color: '#6b7280', marginBottom: '16px' }}>{note.uploadedBy?.email || ''}</p>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '16px' }}>
+                <div style={{ textAlign: 'center', padding: '12px', background: '#f9fafb', borderRadius: '8px' }}>
+                  <div style={{ fontSize: '18px', fontWeight: '700', color: '#111827' }}>{note.uploadedBy?.stats?.notesUploaded || 0}</div>
+                  <div style={{ fontSize: '12px', color: '#6b7280' }}>Notes</div>
                 </div>
-                <div className="author-stat">
-                  <span>Total Downloads:</span>
-                  <span className="author-stat-value">2,847</span>
+                <div style={{ textAlign: 'center', padding: '12px', background: '#f9fafb', borderRadius: '8px' }}>
+                  <div style={{ fontSize: '18px', fontWeight: '700', color: '#111827' }}>{note.uploadedBy?.stats?.totalDownloads?.toLocaleString() || 0}</div>
+                  <div style={{ fontSize: '12px', color: '#6b7280' }}>Downloads</div>
                 </div>
-                <div className="author-stat">
-                  <span>Average Rating:</span>
-                  <span className="author-stat-value">4.7</span>
+                <div style={{ textAlign: 'center', padding: '12px', background: '#f9fafb', borderRadius: '8px' }}>
+                  <div style={{ fontSize: '18px', fontWeight: '700', color: '#111827' }}>{(note.uploadedBy?.stats?.averageRating || 0).toFixed(1)}</div>
+                  <div style={{ fontSize: '12px', color: '#6b7280' }}>Rating</div>
                 </div>
               </div>
-              <button className="view-profile-button">
+              
+              <button 
+                onClick={() => navigate(`/profile/${note.uploadedBy?._id}`)}
+                style={{ width: '100%', padding: '12px', background: '#667eea', color: 'white', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' }}
+              >
                 View Profile
               </button>
             </div>
           </div>
 
           {/* Related Notes */}
-          <div className="note-card related-notes">
-            <h3>Related Notes</h3>
-            <div className="related-notes-list">
+          <div style={{ background: 'white', borderRadius: '16px', padding: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '16px', color: '#111827' }}>Related Notes</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {[
                 { title: 'Linear Algebra Basics', subject: 'Mathematics', rating: 4.6 },
                 { title: 'Differential Equations', subject: 'Mathematics', rating: 4.7 },
                 { title: 'Statistics Guide', subject: 'Mathematics', rating: 4.5 }
               ].map((relatedNote, index) => (
-                <div key={index} className="related-note">
-                  <h4 className="related-note-title">{relatedNote.title}</h4>
-                  <div className="related-note-meta">
-                    <span>{relatedNote.subject}</span>
-                    <div className="related-note-rating">
-                      <Star size={12} className="star-icon" />
+                <div key={index} style={{ padding: '12px', border: '1px solid #e5e7eb', borderRadius: '8px', cursor: 'pointer' }}>
+                  <h4 style={{ fontSize: '14px', fontWeight: '600', color: '#111827', marginBottom: '4px' }}>{relatedNote.title}</h4>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span style={{ fontSize: '12px', color: '#6b7280' }}>{relatedNote.subject}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#fbbf24' }}>
+                      <Star size={12} fill="#fbbf24" />
                       {relatedNote.rating}
                     </div>
                   </div>

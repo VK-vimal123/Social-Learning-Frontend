@@ -127,7 +127,7 @@ const NotesBrowse = () => {
           uploadDate: note.createdAt,
           tags: note.tags || [],
           fileSize: formatFileSize(note.fileSize),
-          fileType: note.fileType?.toUpperCase() || 'PDF',
+          fileType: formatFileType(note.fileType),
           fileUrl: note.fileUrl
         }));
 
@@ -148,12 +148,29 @@ const NotesBrowse = () => {
   };
 
   const formatFileSize = (bytes) => {
-    if (!bytes) return 'Unknown size';
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    if (!bytes) return '0 B';
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    return (bytes / (1024 * 1024 * 1024)).toFixed(1) + ' GB';
+  };
+
+  const formatFileType = (fileType) => {
+    if (!fileType) return 'PDF';
+    
+    const typeMap = {
+      'application/pdf': 'PDF',
+      'application/msword': 'DOC',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'DOCX',
+      'application/vnd.ms-excel': 'XLS',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'XLSX',
+      'application/vnd.ms-powerpoint': 'PPT',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'PPTX',
+      'text/plain': 'TXT',
+      'text/csv': 'CSV'
+    };
+    
+    return typeMap[fileType] || fileType.split('/').pop()?.toUpperCase()?.substring(0, 4) || 'FILE';
   };
 
   const renderStars = (rating) => {
@@ -175,75 +192,205 @@ const NotesBrowse = () => {
     );
   };
 
-    const NoteCard = ({ note }) => (
-    <div className="note-card" onClick={() => handleNoteClick(note.id)}>
-      <div className="note-card-content">
-        <div className="note-card-header">
-          <div className="flex-1">
-            <h3 className="note-title">{note.title}</h3>
-            <p className="note-description">{note.description}</p>
-          </div>
-        </div>
+  const handleDownload = async (e, note) => {
+    e.stopPropagation();
+    try {
+      await apiService.downloadNote(note.id);
+      window.open(note.fileUrl, '_blank');
+      showToast('Download started!', 'success');
+    } catch (error) {
+      showToast('Download failed. Please try again.', 'error');
+    }
+  };
 
-        <div className="note-meta">
-          <div className="author-info">
-            <div className="author-avatar">{note.author.avatar}</div>
-            <div className="author-details">
-              <p className="author-name">{note.author.name}</p>
-              <p className="author-subject">{note.subject}</p>
+  const NoteCard = ({ note }) => (
+    <div 
+      style={{
+        background: 'white',
+        borderRadius: '16px',
+        padding: '20px',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+        cursor: 'pointer',
+        transition: 'all 0.2s ease',
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column'
+      }}
+      onClick={() => handleNoteClick(note.id)}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.transform = 'translateY(-4px)';
+        e.currentTarget.style.boxShadow = '0 12px 24px rgba(0,0,0,0.1)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.transform = 'translateY(0)';
+        e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
+      }}
+    >
+      <div style={{ flex: 1 }}>
+        <h3 style={{ 
+          fontSize: '18px', 
+          fontWeight: '600', 
+          color: '#111827', 
+          marginBottom: '8px',
+          lineHeight: '1.4'
+        }}>
+          {note.title}
+        </h3>
+        <p style={{ 
+          fontSize: '14px', 
+          color: '#6b7280', 
+          marginBottom: '16px',
+          lineHeight: '1.5',
+          display: '-webkit-box',
+          WebkitLineClamp: 2,
+          WebkitBoxOrient: 'vertical',
+          overflow: 'hidden'
+        }}>
+          {note.description}
+        </p>
+
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'space-between',
+          marginBottom: '16px' 
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{
+              width: '36px',
+              height: '36px',
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'white',
+              fontSize: '14px',
+              fontWeight: '600'
+            }}>
+              {note.author.avatar}
+            </div>
+            <div>
+              <p style={{ fontSize: '14px', fontWeight: '500', color: '#374151' }}>
+                {note.author.name}
+              </p>
+              <p style={{ fontSize: '12px', color: '#6b7280' }}>
+                {note.subject}
+              </p>
             </div>
           </div>
-          <span className="file-type-badge">{note.fileType}</span>
+          <span style={{
+            padding: '4px 10px',
+            background: '#e0e7ff',
+            color: '#4338ca',
+            borderRadius: '20px',
+            fontSize: '12px',
+            fontWeight: '600'
+          }}>
+            {note.fileType}
+          </span>
         </div>
 
-        <div className="note-tags">
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '16px' }}>
           {note.tags.slice(0, 3).map((tag, index) => (
-            <span key={index} className="note-tag">{tag}</span>
+            <span key={index} style={{
+              padding: '4px 10px',
+              background: '#f3f4f6',
+              color: '#4b5563',
+              borderRadius: '16px',
+              fontSize: '12px'
+            }}>
+              {tag}
+            </span>
           ))}
           {note.tags.length > 3 && (
-            <span className="note-tag">+{note.tags.length - 3} more</span>
+            <span style={{
+              padding: '4px 10px',
+              background: '#f3f4f6',
+              color: '#4b5563',
+              borderRadius: '16px',
+              fontSize: '12px'
+            }}>
+              +{note.tags.length - 3}
+            </span>
           )}
         </div>
 
-        <div className="note-stats">
-          <div className="stat-item">
-            <Star size={14} className="star-icon" />
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: '16px',
+          paddingTop: '16px',
+          borderTop: '1px solid #e5e7eb'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', color: '#6b7280' }}>
+            <Star size={14} style={{ color: '#fbbf24' }} />
             {note.rating} ({note.ratingCount})
           </div>
-          <div className="stat-item">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', color: '#6b7280' }}>
             <Download size={14} />
             {note.downloads}
           </div>
-          <div className="stat-item">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', color: '#6b7280' }}>
             <Eye size={14} />
             {note.views}
           </div>
-          <div className="stat-item">
-            <Calendar size={14} />
-            {new Date(note.uploadDate).toLocaleDateString()}
-          </div>
         </div>
+      </div>
 
-        <div className="note-actions">
-          <span className="file-size">{note.fileSize}</span>
-          <div className="action-buttons">
-            <button className="btn btn-secondary"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      alert('Preview functionality would be implemented here');
-                    }}>
-              <Eye size={16} />
-              Preview
-            </button>
-            <button className="btn btn-primary"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      alert('Download started! In a real app, this would download the actual file.');
-                    }}>
-              <Download size={16} />
-              Download
-            </button>
-          </div>
+      <div style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'space-between',
+        marginTop: '16px',
+        paddingTop: '16px',
+        borderTop: '1px solid #e5e7eb'
+      }}>
+        <span style={{ fontSize: '13px', color: '#6b7280' }}>
+          {note.fileSize}
+        </span>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button 
+            style={{
+              padding: '8px 14px',
+              border: '1px solid #d1d5db',
+              borderRadius: '8px',
+              background: 'white',
+              color: '#374151',
+              fontSize: '13px',
+              fontWeight: '500',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              window.open(note.fileUrl, '_blank');
+            }}
+          >
+            <Eye size={16} />
+            Preview
+          </button>
+          <button 
+            style={{
+              padding: '8px 14px',
+              border: 'none',
+              borderRadius: '8px',
+              background: '#667eea',
+              color: 'white',
+              fontSize: '13px',
+              fontWeight: '500',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}
+            onClick={(e) => handleDownload(e, note)}
+          >
+            <Download size={16} />
+            Download
+          </button>
         </div>
       </div>
     </div>
