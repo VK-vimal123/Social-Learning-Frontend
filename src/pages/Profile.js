@@ -9,7 +9,6 @@ import {
   Star, 
   Download, 
   Users, 
-  Award,
   Edit,
   Camera,
   Save,
@@ -83,14 +82,6 @@ const Profile = () => {
       location: user?.location || ''
     });
     setIsEditing(false);
-  };
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setEditedUser(prev => ({
-      ...prev,
-      [name]: value
-    }));
   };
 
   const recentNotes = [

@@ -175,31 +175,6 @@ const NotesUpload = () => {
     }
   };
 
-  const removeFile = () => {
-    setFormData(prev => ({
-      ...prev,
-      file: null
-    }));
-  };
-
-  const formatFileSize = (bytes) => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
-
-  const popularSubjects = [
-    'Mathematics', 'Physics', 'Chemistry', 'Computer Science', 
-    'Biology', 'Engineering', 'Medicine', 'Business'
-  ];
-
-  const popularTags = [
-    'exam', 'notes', 'study-guide', 'formula', 'tutorial', 
-    'assignment', 'lab', 'reference', 'summary', 'cheatsheet'
-  ];
-
   return (
     <div style={{
       maxWidth: '900px',
