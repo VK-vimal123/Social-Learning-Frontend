@@ -18,7 +18,6 @@ import '../assets/css/notes-browse.css';
 
 const NotesBrowse = () => {
   const navigate = useNavigate();
-  const [allNotes, setAllNotes] = useState([]);
   const [subjects, setSubjects] = useState([]);
   const [filteredNotes, setFilteredNotes] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');

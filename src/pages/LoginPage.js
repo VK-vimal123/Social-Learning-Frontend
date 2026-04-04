@@ -303,20 +303,24 @@ const LoginPage = () => {
                     Remember me
                   </span>
                 </label>
-                <a
-                  href="#"
+                <button
+                  type="button"
+                  onClick={() => navigate('/forgot-password')}
                   style={{
                     fontSize: '14px',
                     color: '#667eea',
                     textDecoration: 'none',
                     fontWeight: '500',
-                    transition: 'color 0.2s ease'
+                    transition: 'color 0.2s ease',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer'
                   }}
                   onMouseEnter={(e) => e.target.style.color = '#5a67d8'}
                   onMouseLeave={(e) => e.target.style.color = '#667eea'}
                 >
                   Forgot password?
-                </a>
+                </button>
               </div>
 
               <button

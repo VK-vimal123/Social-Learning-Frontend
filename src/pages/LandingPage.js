@@ -6,8 +6,6 @@ import {
   Star, 
   Upload, 
   Search, 
-  Award,
-  TrendingUp,
   Shield,
   Zap
 } from 'lucide-react';

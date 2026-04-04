@@ -4,8 +4,6 @@ import {
   Download, 
   Star, 
   Heart, 
-  MessageCircle, 
-  Calendar,
   BookOpen,
   Tag,
   ArrowLeft,
