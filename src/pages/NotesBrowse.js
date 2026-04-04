@@ -130,7 +130,7 @@ const NotesBrowse = () => {
           fileUrl: note.fileUrl
         }));
 
-        setAllNotes(formattedNotes);
+        setNotes(formattedNotes);
         setFilteredNotes(formattedNotes);
         setPagination(prev => ({
           ...prev,
