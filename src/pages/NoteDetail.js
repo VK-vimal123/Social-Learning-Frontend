@@ -6,7 +6,6 @@ import {
   Heart, 
   MessageCircle, 
   Calendar,
-  User,
   BookOpen,
   Tag,
   ArrowLeft,
@@ -31,7 +30,6 @@ const NoteDetail = () => {
   const [userRating, setUserRating] = useState(0);
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState('');
-  const [showComments, setShowComments] = useState(false);
   const [toast, setToast] = useState(null);
   const [downloading, setDownloading] = useState(false);
 
@@ -45,6 +43,7 @@ const NoteDetail = () => {
 
   useEffect(() => {
     fetchNoteData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const fetchNoteData = async () => {
@@ -181,28 +180,6 @@ const NoteDetail = () => {
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
     if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
     return (bytes / (1024 * 1024 * 1024)).toFixed(1) + ' GB';
-  };
-
-  const renderStars = (rating, interactive = false) => {
-    return (
-      <div className="flex items-center gap-1">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <Star
-            key={star}
-            size={interactive ? 24 : 16}
-            className={`cursor-pointer transition-colors ${
-              star <= rating 
-                ? 'text-yellow-400 fill-current' 
-                : 'text-gray-300 hover:text-yellow-200'
-            }`}
-            onClick={() => interactive && handleRating(star)}
-          />
-        ))}
-        <span className="ml-2 text-sm text-gray-600">
-          {rating > 0 ? `${rating}.0` : 'Rate this'}
-        </span>
-      </div>
-    );
   };
 
   if (loading) {

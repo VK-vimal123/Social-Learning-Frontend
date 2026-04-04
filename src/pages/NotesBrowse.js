@@ -7,9 +7,7 @@ import {
   Star, 
   Eye, 
   Calendar,
-  User,
   BookOpen,
-  Tag,
   ChevronDown,
   Grid,
   List
@@ -20,7 +18,7 @@ import '../assets/css/notes-browse.css';
 
 const NotesBrowse = () => {
   const navigate = useNavigate();
-  const [notes, setNotes] = useState([]);
+  const [allNotes, setAllNotes] = useState([]);
   const [subjects, setSubjects] = useState([]);
   const [filteredNotes, setFilteredNotes] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -62,6 +60,7 @@ const NotesBrowse = () => {
   useEffect(() => {
     fetchSubjects();
     fetchNotes();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -69,6 +68,7 @@ const NotesBrowse = () => {
       fetchNotes();
     }, 500);
     return () => clearTimeout(delayedSearch);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchTerm, selectedSubject, selectedRating, sortBy, pagination.page]);
 
   const fetchSubjects = async () => {
